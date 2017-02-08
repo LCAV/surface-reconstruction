@@ -10,11 +10,12 @@ def test1(signalType, samplerType, solverType, plot=False):
         plot_results(polynomial, 'g')
     sampler = samplerType(polynomial, n)
     if plot:
-        stem_results(sampler.SAMPLE_POSITIONS, sampler.get_samples(), 'g')
-    solver = solverType(sampler.get_samples(), len(start_param), signalType)
+        stem_results(sampler.sample_positions, sampler.sample_values, 'g')
+    solver = solverType(sampler.sample_values, len(start_param), signalType)
+    solver.solve()
     if plot:
         plot_results(signalType(solver.parameter_estimate))
-        stem_results(solver.position_estimate, sampler.get_samples())
+        stem_results(solver.position_estimate, sampler.sample_values)
         pylab.show()
     print("{:.2e}".format(solver.train_error))
     print("{:.2e}".format(polynomial.square_error(signalType(solver.parameter_estimate))))

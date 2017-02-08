@@ -1,7 +1,6 @@
 from matplotlib import pylab
 from pylab import rcParams
 from signals import *
-from scipy import optimize
 rcParams['figure.figsize'] = 5, 4
 
 signal = SignalExp([0, 1, 0])
@@ -32,7 +31,5 @@ p1 = signal.path(sample_pos[0],0.1*change)
 for s in sample_pos:
     p = signal.path(s,0.1*change)
     pylab.plot(p1,p,lw=3)
-# pylab.xlim([0.6,1.4])
-# pylab.ylim([0.6,2.8])
 pylab.ioff()
 pylab.show()
