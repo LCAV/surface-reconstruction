@@ -22,13 +22,13 @@ for test in range(tests):
 
     sampler = SurfaceSampler(polynomial,2*n,[slope,b,f], interval_length=1, sigma=0.0)
     # noise = 1e-2*nr.randn(N)
-    sample_values = sampler.get_samples()
+    sample_values = sampler.sample_values
 
     solver = ConstrainedALS(
         sample_values,
         polynomial.model_size,
         SecondSurfacePolynomial,
-        start_pos=sampler.get_positions(),
+        start_pos=sampler.sample_positions,
         stopping_error=1e-10,
         beta=0.5,
         show_plots=False,

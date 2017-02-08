@@ -12,13 +12,13 @@ class SignalModel(object):
         self.interval_length = interval_length
 
     def get_samples(self, positions):
-        raise NotImplemented
+        raise NotImplementedError('get_samples must be implemented by the subclass')
 
     def square_error(self, signal2):
-        raise NotImplemented
+        raise NotImplementedError('square_error must be implemented by the subclass')
 
     def path(self, point, change, n=50):
-        raise NotImplemented
+        raise NotImplementedError('path must be implemented by the subclass')
 
 
 class SignalPolynomial(SignalModel):
