@@ -155,6 +155,9 @@ class ConstrainedALS(AlternatingLS):
                 time.sleep(0.01)
                 pylab.pause(0.01)
 
+            if k == self.max_iterations -1:
+                print('force stop after', self.max_iterations, 'steps')
+
 
 
 class InvertedLS(OrdinaryLS):

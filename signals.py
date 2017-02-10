@@ -184,7 +184,7 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
     def shifted_positions(sample_positions, trace_param):
         assert trace_param[1]>0, 'b = ' + str(trace_param[1])
         assert abs(trace_param[0]) < (np.pi/2.0), 'a = ' + str(trace_param[0])
-        assert np.tan(trace_param[0]) < trace_param[2], 'a = ' + str(trace_param[0])
+        assert abs(np.tan(trace_param[0])) < trace_param[2], 'tg(a) = ' + str(np.tan(trace_param[0]))
         cosa = np.cos(trace_param[0])
         sina = np.sin(trace_param[0])
         return [(trace_param[1]) * x / (trace_param[2]*cosa - sina * x) for x in sample_positions]
