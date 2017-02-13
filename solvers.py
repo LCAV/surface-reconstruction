@@ -126,7 +126,7 @@ class ConstrainedALS(AlternatingLS):
                 print("converged to local minimum after", k, "steps")
                 break
 
-            self.tr_param -= self.beta * g
+            self.tr_param -= self.beta * g / len(self.position_estimate) # normalize the gradient so it does not explode for many samples
             self.position_estimate = self.model_type.shifted_positions(self.start_positions, self.tr_param)
             error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
