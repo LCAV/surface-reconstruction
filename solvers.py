@@ -89,7 +89,7 @@ class ConstrainedALS(AlternatingLS):
 
     def __init__(self, samples, model_size, model_type, start_pos,
                  show_plots=False, hold_edges=True, stopping_error=1.0e-6, beta=0.01, interval_length=1, max_iter=10000,
-                fl=1.0, change_beta=False):
+                fl=1.0, change_beta=False, angle=0):
         super(ConstrainedALS,self).__init__(samples,model_size,model_type, show_plots,
                                             hold_edges, stopping_error, beta, interval_length)
         assert len(samples)==len(start_pos)
@@ -99,6 +99,7 @@ class ConstrainedALS(AlternatingLS):
         self.tr_param = self.model_type.zero_transformation()
         if self.model_type == SecondSurfacePolynomial:
             self.tr_param[2]=fl
+            self.tr_param[0]=angle
         self.max_iterations = max_iter
 
     def solve(self):
