@@ -2,8 +2,8 @@ from samplers import *
 from solvers import *
 from plots import  *
 
-tests = 50
-n = 3
+tests = 3
+n = 4
 f = 1.0
 b = 1.0
 errors = []
@@ -14,16 +14,16 @@ for test in range(tests):
     print("test: ", test)
 
     tmp_err = []
-    start_param = 0.1*nr.randn(n, 1)
+    start_param = nr.randn(n, 1)
     # polynomials.append(start_param)
     print(start_param)
 
     for slope in slopes:
         true_error = 0
         polynomial = SecondSurfacePolynomial(start_param)
-        sampler = SurfaceSampler(polynomial,10*n,[slope,b,f], interval_length=2, sigma=0.0, beg=-1)
+        sampler = SurfaceSampler(polynomial,2*n,[slope,b,f], interval_length=2, sigma=0.0, beg=-1)
 
-        noise = 1e-2*nr.randn(10*n)
+        noise = 1e-1*nr.randn(2*n)
         sample_values = sampler.sample_values + noise
         nsr.append(np.linalg.norm(noise)/np.linalg.norm(sampler.sample_values))
 
@@ -34,7 +34,7 @@ for test in range(tests):
             SecondSurfacePolynomial,
             start_pos=sampler.sample_positions,
             stopping_error=1e-10,
-            beta=0.5,
+            beta=0.1,
             show_plots=False,
             max_iter=10000,
             fl=f)
@@ -52,8 +52,8 @@ for test in range(tests):
 
 errors = np.array(errors)
 nsr = np.array(nsr)
-print("mean:", np.nanmean(errors))
-print("median:", np.median(errors))
+print("mean:", np.nanmean(errors)*180/np.pi)
+print("median:", np.nanmedian(errors))
 print("std:",np.nanstd(errors))
 print("NANS:", str(np.count_nonzero(np.isnan(errors))/len(errors.flatten())*100)+"%")
 print("noise to signal", np.nanmean(nsr))
