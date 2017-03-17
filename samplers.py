@@ -1,6 +1,7 @@
 import numpy.random as nr
 from signals import *
 
+
 class DeterministicSampler(object):
     """general sampler:
      keeps sample positions an compute sample values"""
@@ -16,6 +17,7 @@ class DeterministicSampler(object):
 
     def _make_samples(self, signal):
         return signal.get_samples(self.sample_positions)
+
 
 class GaussianSampler(DeterministicSampler):
     def __init__(self, signal, number_samples, interval_length=1, hold_edges=True, sigma=None, beg=0):
@@ -45,8 +47,6 @@ class SurfaceSampler(GaussianSampler):
         self.sample_positions = self._make_positions()
         self.sample_values = self._make_samples(signal)
 
-
     def _make_samples(self, signal):
         true_pos = signal.shifted_positions(self.sample_positions, self.surf_params)
-        return  signal.get_samples(true_pos)
-
+        return signal.get_samples(true_pos)

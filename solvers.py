@@ -57,7 +57,7 @@ class AlternatingLS(Solver):
         self.max_iterations = 10000
         self.illustration = []
         self.train_error = 0.0
-        self.parameter_estimate = np.zeros((self.model_size))
+        self.parameter_estimate = np.zeros(self.model_size)
 
     def solve(self):
 
@@ -86,20 +86,23 @@ class AlternatingLS(Solver):
 
 
 class ConstrainedALS(AlternatingLS):
+    """Alternating least squares for constrained case
+    i. e. alternating least squares with gradient descent,
+    where parameters of matrix X depend on parameters (tr_param)"""
 
     def __init__(self, samples, model_size, model_type, start_pos,
                  show_plots=False, hold_edges=True, stopping_error=1.0e-6, beta=0.01, interval_length=1, max_iter=10000,
-                fl=1.0, change_beta=False, angle=0):
-        super(ConstrainedALS,self).__init__(samples,model_size,model_type, show_plots,
-                                            hold_edges, stopping_error, beta, interval_length)
-        assert len(samples)==len(start_pos)
+                 fl=1.0, angle=0):
+        super(ConstrainedALS, self).__init__(samples, model_size, model_type, show_plots,
+                                             hold_edges, stopping_error, beta, interval_length)
+        assert len(samples) == len(start_pos)
         self.position_estimate = start_pos
         self.start_positions = start_pos
         self.illustration_param = []
         self.tr_param = self.model_type.zero_transformation()
         if self.model_type == SecondSurfacePolynomial:
-            self.tr_param[2]=fl
-            self.tr_param[0]=angle
+            self.tr_param[2] = fl
+            self.tr_param[0] = angle
         self.max_iterations = max_iter
 
     def solve(self):
@@ -107,7 +110,7 @@ class ConstrainedALS(AlternatingLS):
         for k in range(0, self.max_iterations):
             # if k%100==0 and k<5000: #brzydkie
             # print "step %d" % k
-            if k<5:
+            if k < 5:
                 self.illustration.append(self.position_estimate)
                 self.illustration_param.append(self.tr_param)
 
@@ -120,14 +123,16 @@ class ConstrainedALS(AlternatingLS):
                 print("error small enough after fitting parameters")
                 break
 
-            g = self.model_type.compute_ls_gradient(self.start_positions, self.parameter_estimate, self.samples,self.tr_param)
+            g = self.model_type.compute_ls_gradient(self.start_positions, self.parameter_estimate, self.samples,
+                                                    self.tr_param)
             # print "gradient: %f" % g
             # print "alpha: %f" % self.tr_param
             if np.max(np.abs(g*self.beta)) < np.finfo(float).eps:
                 print("converged to local minimum after", k, "steps")
                 break
 
-            self.tr_param -= self.beta * g / len(self.position_estimate) # normalize the gradient so it does not explode for many samples
+            # normalize the gradient so it does not explode for many samples
+            self.tr_param -= self.beta * g / len(self.position_estimate)
             self.position_estimate = self.model_type.shifted_positions(self.start_positions, self.tr_param)
             error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
@@ -138,16 +143,15 @@ class ConstrainedALS(AlternatingLS):
             if self.error < error:
                 print("error:", self.error, "beta:", self.beta)
                 if self.beta > 10*np.finfo(float).eps:
-                    self.beta *=0.5
+                    self.beta *= 0.5
 
-            if k>0 and sign != np.sign(g[0]):
+            if k > 0 and sign != np.sign(g[0]):
                 if self.show_plots:
                     print("jumped over minimum,", "beta:", self.beta)
                 if self.beta > 10*np.finfo(float).eps:
                     self.beta *= 0.5
 
             sign = np.sign(g[0])
-
 
             if self.show_plots & (k % 10 == 0):
                 print("first param change:", g[0], "beta:", self.beta)
@@ -156,9 +160,8 @@ class ConstrainedALS(AlternatingLS):
                 time.sleep(0.01)
                 pylab.pause(0.01)
 
-            if k == self.max_iterations -1:
+            if k == self.max_iterations - 1:
                 print('force stop after', self.max_iterations, 'steps')
-
 
 
 class InvertedLS(OrdinaryLS):
@@ -170,10 +173,9 @@ class InvertedLS(OrdinaryLS):
         super(InvertedLS, self).__init__(samples, model_size, model_type, interval_length)
         assert model_size == 2
 
-
     def solve(self):
         (self.position_estimate, self.samples) = (self.samples, self.position_estimate)
-        (self.train_error, self.parameter_estimate) = self.solve()
+        (self.train_error, self.parameter_estimate) = self.solve() #TODO what it is doing?
         (self.position_estimate, self.samples) = (self.samples, self.position_estimate)
         pe = self.parameter_estimate
         self.parameter_estimate = [-pe[0]/pe[1], 1/pe[1]]

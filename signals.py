@@ -162,18 +162,19 @@ class FullSurfacePolynomial(ConstrainedPolynomial):
     def zero_transformation():
         return [0, 0]
 
+
 class SecondSurfacePolynomial(ConstrainedPolynomial):
     def __init__(self, parameters, interval_length=1):
         super(SecondSurfacePolynomial, self).__init__(parameters, interval_length)
 
     @classmethod
     def positions_derivative(cls, sample_positions, tr_parameter):
-        cosa = np.cos(tr_parameter[0])
-        sina = np.sin(tr_parameter[0])
+        cos_a = np.cos(tr_parameter[0])
+        sin_a = np.sin(tr_parameter[0])
         b = tr_parameter[1]
         f = tr_parameter[2]
-        return np.array([[cls._denominator(s, f, cosa, sina) ** 2 * (f*sina + s*cosa ) *(b *s),
-                          s*cls._denominator(s,f,cosa, sina), 0]
+        return np.array([[cls._denominator(s, f, cos_a, sin_a) ** 2 * ((f * sin_a) + (s * cos_a)) * (b * s),
+                          s * cls._denominator(s, f, cos_a, sin_a), 0]
                          for s in sample_positions])
 
     @staticmethod
@@ -182,7 +183,7 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
 
     @staticmethod
     def shifted_positions(sample_positions, trace_param):
-        assert trace_param[1]>0, 'b = ' + str(trace_param[1])
+        assert trace_param[1] > 0, 'b = ' + str(trace_param[1])
         assert abs(trace_param[0]) < (np.pi/2.0), 'a = ' + str(trace_param[0])
         assert abs(np.tan(trace_param[0])) < trace_param[2], 'tg(a) = ' + str(np.tan(trace_param[0]))
         cosa = np.cos(trace_param[0])
@@ -194,7 +195,7 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
         return [0, 1, 1]
 
 
-class SignalExp(SignalModel):
+class SignalExp(SignalModel): #TODO do we need this guy?
     def __init__(self, parameters, interval_length=2 * np.pi):
         super(SignalExp, self).__init__(parameters, interval_length)
 
