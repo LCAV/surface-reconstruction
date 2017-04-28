@@ -92,7 +92,7 @@ class ConstrainedALS(AlternatingLS):
 
     def __init__(self, samples, model_size, model_type, start_pos,
                  show_plots=False, hold_edges=True, stopping_error=1.0e-6, beta=0.01, interval_length=1, max_iter=10000,
-                 fl=1.0, angle=0):
+                 fl=1.0, angle=0, verbose=True):
         super(ConstrainedALS, self).__init__(samples, model_size, model_type, show_plots,
                                              hold_edges, stopping_error, beta, interval_length)
         assert len(samples) == len(start_pos)
@@ -104,6 +104,7 @@ class ConstrainedALS(AlternatingLS):
             self.tr_param[2] = fl
             self.tr_param[0] = angle
         self.max_iterations = max_iter
+        self.verb = verbose
 
     def solve(self):
         sign = -1
@@ -120,7 +121,8 @@ class ConstrainedALS(AlternatingLS):
             self.error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
             if self.error < self.stopping_error:
-                print("error small enough after fitting parameters")
+                if self.verb:
+                    print("error small enough after fitting parameters")
                 break
 
             g = self.model_type.compute_ls_gradient(self.start_positions, self.parameter_estimate, self.samples,
@@ -128,7 +130,8 @@ class ConstrainedALS(AlternatingLS):
             # print "gradient: %f" % g
             # print "alpha: %f" % self.tr_param
             if np.max(np.abs(g*self.beta)) < np.finfo(float).eps:
-                print("converged to local minimum after", k, "steps")
+                if self.verb:
+                    print("converged to local minimum after", k, "steps")
                 break
 
             # normalize the gradient so it does not explode for many samples
@@ -137,11 +140,13 @@ class ConstrainedALS(AlternatingLS):
             error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
             if error < self.stopping_error:
-                print("error small enough after fitting positions")
+                if self.verb:
+                    print("error small enough after fitting positions")
                 break
 
             if self.error < error:
-                print("error:", self.error, "beta:", self.beta)
+                if self.verb:
+                    print("error:", self.error, "beta:", self.beta)
                 if self.beta > 10*np.finfo(float).eps:
                     self.beta *= 0.5
 
@@ -161,7 +166,8 @@ class ConstrainedALS(AlternatingLS):
                 pylab.pause(0.01)
 
             if k == self.max_iterations - 1:
-                print('force stop after', self.max_iterations, 'steps')
+                if self.verb:
+                    print('force stop after', self.max_iterations, 'steps')
 
 
 class InvertedLS(OrdinaryLS):
