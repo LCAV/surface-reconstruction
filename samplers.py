@@ -3,7 +3,7 @@ from signals import *
 
 
 class DeterministicSampler(object):
-    """general sampler:
+    """General sampler:
      keeps sample positions an compute sample values"""
 
     def __init__(self, signal, number_samples, interval_length=1):
@@ -20,6 +20,9 @@ class DeterministicSampler(object):
 
 
 class GaussianSampler(DeterministicSampler):
+    """Random sampler:
+    generates sample positions independently from normal distribution,
+    with variance sigma and uniform sample positions as a vector of means"""
     def __init__(self, signal, number_samples, interval_length=1, hold_edges=True, sigma=None, beg=0):
         if sigma is None:
             sigma = (1.0*interval_length)/number_samples
@@ -40,6 +43,9 @@ class GaussianSampler(DeterministicSampler):
 
 
 class SurfaceSampler(GaussianSampler):
+    """Deterministic surface sampler:
+    generates sample positions uniformly from the signal on the surface described by surf_params
+    the actual sample movement is handled by the Signal model"""
     def __init__(self, signal, number_samples, surf_params, interval_length=1, sigma=None, beg=0):
         self.surf_params = surf_params
         self.beg = beg

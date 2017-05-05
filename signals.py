@@ -86,6 +86,8 @@ class SignalPolynomial(SignalModel):
 
 
 class ConstrainedPolynomial(SignalPolynomial):
+    """Abstract constrained polynomial:
+    contains all the logic needed for ALS algorithm, but constrains need to be added"""
     def __init__(self, parameters, interval_length=1):
         super(ConstrainedPolynomial, self).__init__(parameters, interval_length)
 
@@ -125,6 +127,8 @@ class ConstrainedPolynomial(SignalPolynomial):
 
 
 class SurfacePolynomial(ConstrainedPolynomial):
+    """Simple version of constrained polynomial on the surface:
+    constrains modeled as simple rational function,x/(1-parameters*x)"""
     def __init__(self, parameters, interval_length=1):
         super(SurfacePolynomial, self).__init__(parameters, interval_length)
 
@@ -143,6 +147,8 @@ class SurfacePolynomial(ConstrainedPolynomial):
 
 
 class FullSurfacePolynomial(ConstrainedPolynomial):
+    """Simple version of constrained polynomial on the surface:
+    constrains modeled as simple rational function, parameters[1]*x/(1-parameters[0]*x)"""
     def __init__(self, parameters, interval_length=1):
         super(FullSurfacePolynomial, self).__init__(parameters, interval_length)
 
@@ -164,6 +170,7 @@ class FullSurfacePolynomial(ConstrainedPolynomial):
 
 
 class SecondSurfacePolynomial(ConstrainedPolynomial):
+    """The final version of constrained polynomial on the surface, as described in the paper"""
     def __init__(self, parameters, interval_length=1):
         super(SecondSurfacePolynomial, self).__init__(parameters, interval_length)
 
@@ -195,7 +202,8 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
         return [0, 1, 1]
 
 
-class SignalExp(SignalModel): #TODO do we need this guy?
+class SignalExp(SignalModel):
+    """Unfinished real part of exponential (bandlimited) signal"""
     def __init__(self, parameters, interval_length=2 * np.pi):
         super(SignalExp, self).__init__(parameters, interval_length)
 

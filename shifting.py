@@ -4,6 +4,8 @@ from matplotlib import pylab
 from pylab import rcParams
 rcParams['figure.figsize'] = 5, 4
 
+"""Script generating plots describing the movement of samples for a path in the space of polynomials,
+finaly replaced by the plots form unknown-locations.ipynb """
 
 pol = SignalPolynomial([2, -1, 1])
 pylab.show()

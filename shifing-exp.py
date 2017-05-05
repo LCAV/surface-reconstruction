@@ -3,6 +3,9 @@ from pylab import rcParams
 from signals import *
 rcParams['figure.figsize'] = 5, 4
 
+"""Script generating plots describing the movement of samples for a path in the space of complex exponentials,
+not included in the paper. """
+
 signal = SignalExp([0, 1, 0])
 
 change = np.array([0, 1, 0])
