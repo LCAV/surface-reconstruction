@@ -4,15 +4,15 @@ from plots import *
 from multiprocessing import Pool
 
 # set parameters
-tests = 50  # number of tests
-pools = 5
-n = 6  # number of parameters of the polynomial (degree + 1)
-ovs = 1  # oversampling
+tests = 1  # number of tests
+pools = 1
+n = 4 # number of parameters of the polynomial (degree + 1)
+ovs = 20  # oversampling
 f = 1.0  # distance between the origin and the image plane
 b = 1.0  # intersection between camera axis and the surface
 slopes = np.linspace(-np.pi / 9, np.pi / 9, 13)
 # slopes = slopes[1:-1]
-noise_scale = 0
+noise_scale = 4
 noise_ampl = 0.0
 if noise_scale is not 0:
     noise_ampl = 10.0 ** (-noise_scale)
@@ -37,7 +37,7 @@ def test_block(beginning):
 
         for slope in slopes:
             polynomial = SecondSurfacePolynomial(start_param)
-            sampler = SurfaceSampler(polynomial, 2 * ovs * n, [slope, b, f], interval_length=2, sigma=0.0, beg=0)
+            sampler = SurfaceSampler(polynomial, 2 * ovs * n, [slope, b, f], interval_length=2, sigma=0.0, beg=-1)
             noise = noise_ampl * nr.randn(2 * ovs * n)
             nsr.append(np.linalg.norm(noise) / np.linalg.norm(sampler.sample_values))
             sample_values = sampler.sample_values + noise
