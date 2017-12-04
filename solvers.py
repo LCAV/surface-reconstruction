@@ -1,7 +1,6 @@
 from plots import *
 import time
 
-
 class Solver(object):
     """General solver"""
 
@@ -91,8 +90,8 @@ class ConstrainedALS(AlternatingLS):
     where parameters of matrix X depend on parameters (tr_param)"""
 
     def __init__(self, samples, model_size, model_type, start_pos,
-                 show_plots=False, hold_edges=True, stopping_error=1.0e-6, beta=0.01, interval_length=1, max_iter=10000,
-                 fl=1.0, angle=0, verbose=True):
+                 show_plots=False, hold_edges=True, stopping_error=1.0e-9, beta=0.01, interval_length=1, max_iter=10000,
+                 fl=1.0, angle=0, verbose=True, early_stopping=1.0e-16):
         super(ConstrainedALS, self).__init__(samples, model_size, model_type, show_plots,
                                              hold_edges, stopping_error, beta, interval_length)
         assert len(samples) == len(start_pos)
@@ -105,38 +104,68 @@ class ConstrainedALS(AlternatingLS):
             self.tr_param[0] = angle
         self.max_iterations = max_iter
         self.verb = verbose
+        self.tr_params_over_time = []
+        self.beta_over_time = []
+        self.error_over_time = []
+        self.error = np.infty
+        self.early_stopping = early_stopping
 
     def solve(self):
-        sign = -1
+        if self.show_plots:
+            self.figure, self.axis = pylab.subplots(1, 3)
+            self.axis[0].set_title("beta")
+            self.axis[1].set_title("error")
+            self.axis[2].set_title("gradient")
+
+        blocked = False
         for k in range(0, self.max_iterations):
-            # if k%100==0 and k<5000: #brzydkie
-            # print "step %d" % k
-            if k < 5:
-                self.illustration.append(self.position_estimate)
-                self.illustration_param.append(self.tr_param)
+            if not blocked:
+                x = self.model_type.create_ls_matrix(self.start_positions, self.model_size, self.tr_param)
+                try:
+                    self.parameter_estimate = np.linalg.solve(np.dot(x.T, x), np.dot(x.T, self.samples))
+                except np.linalg.linalg.LinAlgError as lin_err:
+                    print(lin_err)
+                    print("angle:", self.tr_param[0])
+                    break
 
-            x = self.model_type.create_ls_matrix(self.start_positions, self.model_size, self.tr_param)
-            self.parameter_estimate = np.linalg.solve(np.dot(x.T, x), np.dot(x.T, self.samples))
-            # is it random?
-            self.error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
+            error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
-            if self.error < self.stopping_error:
+
+            if error < self.stopping_error:
                 if self.verb:
                     print("error small enough after fitting parameters")
                 break
 
             g = self.model_type.compute_ls_gradient(self.start_positions, self.parameter_estimate, self.samples,
                                                     self.tr_param)
-            # print "gradient: %f" % g
-            # print "alpha: %f" % self.tr_param
-            if np.max(np.abs(g*self.beta)) < np.finfo(float).eps:
+
+
+            if (np.max(np.abs(error-self.error)) < self.early_stopping) & (not blocked):
                 if self.verb:
-                    print("converged to local minimum after", k, "steps")
+                    print("error stopped changing after", k, "steps")
                 break
 
-            # normalize the gradient so it does not explode for many samples
-            self.tr_param -= self.beta * g / len(self.position_estimate)
-            self.position_estimate = self.model_type.shifted_positions(self.start_positions, self.tr_param)
+            # instead of normalizing the gradient, normalize beta
+            # WARNING this is not a nice hack below:
+
+            if self.tr_param[2] > np.abs(np.tan(self.tr_param[0] - self.beta * g[0])) and np.abs(self.tr_param[0] - self.beta * g[0]) < (np.pi / 2.0):
+                self.tr_param -= self.beta * g
+                blocked = False
+            else:
+                self.beta *= 0.9
+                blocked = True
+
+            if self.beta < 1e-5:
+                if self.verb:
+                    print("beta became to small")
+                break
+
+            try:
+                self.position_estimate = self.model_type.shifted_positions(self.start_positions, self.tr_param)
+            except AssertionError as as_err:
+                print("this is the place!")
+                raise
+
             error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
             if error < self.stopping_error:
@@ -145,29 +174,35 @@ class ConstrainedALS(AlternatingLS):
                 break
 
             if self.error < error:
-                if self.verb:
-                    print("error:", self.error, "beta:", self.beta)
+                # if self.verb:
+                    # print("error:", self.error, "beta:", self.beta)
                 if self.beta > 10*np.finfo(float).eps:
-                    self.beta *= 0.5
+                    self.beta *= 0.9
 
-            if k > 0 and sign != np.sign(g[0]):
-                if self.show_plots:
-                    print("jumped over minimum,", "beta:", self.beta)
-                if self.beta > 10*np.finfo(float).eps:
-                    self.beta *= 0.5
+            self.error = error
+
+            # if k > 0 and sign != np.sign(g[0]):
+            #     if self.verb:
+            #         print("gradient changed sign")
+            #     # if self.beta > 10*np.finfo(float).eps:
+            #     #     self.beta *= 0.9
 
             sign = np.sign(g[0])
 
-            if self.show_plots & (k % 10 == 0):
-                print("first param change:", g[0], "beta:", self.beta)
-                # print("alpha:", self.tr_param)
-                pylab.stem(self.position_estimate, self.samples)
-                time.sleep(0.01)
-                pylab.pause(0.01)
+            if self.show_plots:
+                self.axis[0].plot(k, self.beta, 'go')
+                self.axis[1].semilogy(k, self.error, 'ro')
+                self.axis[2].semilogy(k, np.abs(g[0]), 'bo')
+                pylab.pause(0.1)
+
+            self.beta_over_time.append(self.beta)
+            self.error_over_time.append(self.error)
+            self.tr_params_over_time.append(self.tr_param[0])
 
             if k == self.max_iterations - 1:
                 if self.verb:
                     print('force stop after', self.max_iterations, 'steps')
+        # self.figure.show()
 
 
 class InvertedLS(OrdinaryLS):
