@@ -4,22 +4,33 @@ from plots import *
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
 
-def test_block(beginning):
-    errors_ = []
-    nsr_ = []
-    np.random.seed(beginning)
-    for test in range(int(tests / pools)):
-        test_number = int(tests / pools) * beginning + test
-        print("test: ", test_number)
 
+def test_block(n, ovs, nl, tests, slopes, verbose, save, directory):
+
+    errors_ = []
+    sig_pow = []
+    np.random.seed(10*n + ovs)
+    noise_ampl = 0.0
+    if noise_scale is not 0:
+        noise_ampl = 10.0 ** (-nl)
+
+    version = str(n) + "_" + str(ovs) + "_" + "{0:.2f}".format(nl)
+    print("starting version:", version)
+
+    params = np.loadtxt("polynomials"+str(n)+".csv", delimiter=",")
+    if tests > params.shape[0]:
+        print("not enough polynomials!")
+        return
+
+    for test in range(tests):
         tmp_err = []
-        start_param = params[test_number,:]
+        start_param = params[test,:]
 
         for slope in slopes:
             polynomial = SecondSurfacePolynomial(start_param)
             sampler = SurfaceSampler(polynomial, 2 * ovs * n, [slope, b, f], interval_length=2, sigma=0.0, beg=-1)
             noise = noise_ampl * nr.randn(2 * ovs * n)
-            nsr_.append(np.linalg.norm(noise) / np.linalg.norm(sampler.sample_values))
+            sig_pow.append(np.mean(np.power(sampler.sample_values,2)))
             sample_values = sampler.sample_values + noise
 
             solver = ConstrainedALS(
@@ -27,7 +38,7 @@ def test_block(beginning):
                 polynomial.model_size,
                 SecondSurfacePolynomial,
                 start_pos=sampler.sample_positions,
-                stopping_error=1e-16,
+                stopping_error=1e-14,
                 beta=0.1/ovs,
                 show_plots=plots,
                 max_iter=1000,
@@ -40,70 +51,72 @@ def test_block(beginning):
             except AssertionError as as_err:
                 print("assertion error:", as_err.args[0])
                 true_error = np.NAN
+            except Exception as other_exc:
+                print("unexpected error:", other_exc.args[0])
+                true_error = np.NAN
 
             if(verbose):
-                np.save("offline_errors"+version, solver.error_over_time)
+                np.save("offline_errors" + version, solver.error_over_time)
                 np.save("offline_params" + version, solver.tr_params_over_time)
                 np.save("offline_beta" + version, solver.beta_over_time)
 
             tmp_err.append(true_error)
         errors_.append(np.array(tmp_err))
-    return errors_, nsr_,
+    errors_ = np.array(errors_)
+    sig_pow = np.array(sig_pow)
+
+    print("finished version:", version)
+    if verbose:
+        print("mean:", np.degrees(np.nanmean(errors_)))
+        print("median:", np.degrees(np.nanmedian(errors_)))
+        print("std:", np.degrees(np.nanstd(errors_)))
+        print("NANS:", str(np.count_nonzero(np.isnan(errors_)) / len(errors_.flatten()) * 100) + "%")
+        print("signal_power:", np.mean(sig_pow))
+
+    if save:
+        np.save(directory + "errors_" + version, errors_)
+        np.save(directory + "pow_" + version, sig_pow)
+        np.save(directory + "params_" + version, params)
+        print("saved version:", version)
+    return errors_, sig_pow,
 
 
-# set parameters
-save = True
-new_params = False
-plots = False
-verbose = True
-tests = 100  # number of tests (should be at least two, because)
-pools = 1
-directory = "results/"
+
+def test_block_unpack(t):
+    return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory)
 
 
-for n in range(7,10):
+if __name__ == '__main__':
 
-    ovs = 1  # oversampling
+    # set parameters
+    save = True
+    new_params = False
+    plots = False
+    verbose = False
+    n_tests = 10  # number of tests (should be at least two, because)
+    pools = 1
+    directory = "results/"
+
+    # some global variables?
     f = 1.0  # distance between the origin and the image plane
     b = 1.0  # intersection between camera axis and the surface
     slopes = np.linspace(-np.pi / 9, np.pi / 9, 13)
-    print("Starting slope:", np.degrees(slopes[0]))
 
-    # create or load the polynomials
+    degrees = range(3,6)
+
+    # create polynomials if needed:
     if new_params:
-        params = 2 * nr.randn(tests, n)
-        params[:, 0] = 1
-        np.savetxt("polynomials"+str(n)+".csv", params, delimiter=",")
+        for n in degrees:
+            params = 2 * nr.randn(n_tests, n)
+            params[:, 0] = 1
+            np.savetxt("polynomials" + str(n) + ".csv", params, delimiter=",")
 
-    params = np.loadtxt("polynomials"+str(n)+".csv", delimiter=",")
+    test_set = []
+    for n in degrees:
+        for ovs in [1, 2]:
+            for noise_scale in [0, 1]:
+                test_set.append((n, ovs, noise_scale))
 
-    if plots:
-        for i in range(tests):
-            t = np.linspace(-1, 1, 100)
-            pol = SignalPolynomial(params[i, :])
-            plt.plot(t, pol.get_samples(t))
-        plt.show()
-
-    for ovs in [1,2,4,8]:
-        for noise_scale in range(1,5):
-            noise_ampl = 0.0
-            if noise_scale is not 0:
-                noise_ampl = 10.0 ** (-noise_scale)
-
-            version = str(n) + "_" + str(ovs) + "_" + str(noise_scale)
-            print("starting experiments for version: " + version)
-
-            errors, nsr = test_block(0)
-            errors = np.array(errors)
-            nsr = np.array(nsr)
-
-            print("mean:", np.degrees(np.nanmean(errors)))
-            print("median:", np.degrees(np.nanmedian(errors)))
-            print("std:", np.degrees(np.nanstd(errors)))
-            print("NANS:", str(np.count_nonzero(np.isnan(errors)) / len(errors.flatten()) * 100) + "%")
-            print("noise to signal", np.nanmean(nsr))
-
-            if save:
-                np.save(directory+"errors_"+version, errors)
-                np.save(directory+"nsr_"+version, nsr)
-                np.save(directory+"params_"+version, params)
+    # start 4 worker processes
+    pool = Pool(processes=4)
+    pool.map(test_block_unpack, test_set)
