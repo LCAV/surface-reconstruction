@@ -3,8 +3,6 @@ from solvers import *
 from plots import *
 from multiprocessing import Pool
 import pickle
-from sortedcontainers import SortedSet
-
 
 def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f):
 
@@ -99,7 +97,7 @@ if __name__ == '__main__':
         return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory, b, f)
 
 
-    test_set = SortedSet([])
+    test_set = []
     with open('test_set', 'rb') as in_file:
         test_set = pickle.load(in_file)
 
