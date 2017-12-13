@@ -2,16 +2,17 @@ from samplers import *
 from solvers import *
 from plots import *
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
+import pickle
+from sortedcontainers import SortedSet
 
 
-def test_block(n, ovs, nl, tests, slopes, verbose, save, directory):
+def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f):
 
     errors_ = []
     sig_pow = []
     np.random.seed(10*n + ovs)
     noise_ampl = 0.0
-    if noise_scale is not 0:
+    if nl is not 0:
         noise_ampl = 10.0 ** (-nl)
 
     version = str(n) + "_" + str(ovs) + "_" + "{0:.2f}".format(nl)
@@ -81,41 +82,29 @@ def test_block(n, ovs, nl, tests, slopes, verbose, save, directory):
     return errors_, sig_pow,
 
 
-
-def test_block_unpack(t):
-    return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory)
-
-
 if __name__ == '__main__':
 
     # set parameters
     save = True
-    new_params = False
     plots = False
     verbose = False
-    n_tests = 10  # number of tests (should be at least two, because)
-    pools = 1
+    n_tests = 100  # number of tests (should be at least two, because)
     directory = "results/"
-
-    # some global variables?
     f = 1.0  # distance between the origin and the image plane
     b = 1.0  # intersection between camera axis and the surface
     slopes = np.linspace(-np.pi / 9, np.pi / 9, 13)
 
-    degrees = range(3,6)
 
-    # create polynomials if needed:
-    if new_params:
-        for n in degrees:
-            params = 2 * nr.randn(n_tests, n)
-            params[:, 0] = 1
-            np.savetxt("polynomials" + str(n) + ".csv", params, delimiter=",")
+    def test_block_unpack(t):
+        return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory, b, f)
 
-    test_set = []
-    for n in degrees:
-        for ovs in [1, 2]:
-            for noise_scale in [0, 1]:
-                test_set.append((n, ovs, noise_scale))
+
+    test_set = SortedSet([])
+    with open('test_set', 'rb') as in_file:
+        test_set = pickle.load(in_file)
+
+    for t in test_set:
+        print(t)
 
     # start 4 worker processes
     pool = Pool(processes=4)
