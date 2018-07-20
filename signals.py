@@ -210,18 +210,19 @@ class SignalExp(SignalModel):
     def value(self, x):
         v = 0
         for k in range(0, self.model_size):
-            v += self.parameters[k] * np.cos(k * x)
+            v += self.parameters[-(k + 1)] * np.cos(k * x)
         return v
 
     def path(self, start_pos, change, n=50):
         p = [start_pos]
-        new_parameters = self.parameters
-        new_parameters[0] -= self.value(start_pos)
-        for i in range(1, n):
-            s = SignalExp(new_parameters + i * change)
-            r = optimize.newton(s.value, p[i - 1], fprime=s.derivative_value)
+        start_val = self.value(start_pos)
+        new_parameters = np.copy(self.parameters)
+        for i in range(1, n+1):
+            s = SignalExp(new_parameters + (i * change)/n)
+            value = lambda x: s.value(x) - start_val
+            r = optimize.newton(value, p[i - 1], fprime=s.derivative_value)
+            assert(np.isclose(s.value(r), start_val))
             p.append(r)
-
         return p
 
     def get_samples(self, positions):
@@ -233,7 +234,7 @@ class SignalExp(SignalModel):
     def derivative_value(self, x):
         v = 0
         for k in range(0, self.model_size):
-            v -= k * self.parameters[k] * np.sin(k * x)
+            v -= k * self.parameters[-(k + 1)] * np.sin(k * x)
         return v
 
 
