@@ -83,7 +83,7 @@ def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f):
 if __name__ == '__main__':
 
     # set parameters
-    save = True
+    save = False
     plots = False
     verbose = False
     n_tests = 100  # number of tests (should be at least two, because)
@@ -97,13 +97,12 @@ if __name__ == '__main__':
         return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory, b, f)
 
 
-    test_set = []
     with open('test_set', 'rb') as in_file:
         test_set = pickle.load(in_file)
 
-    for t in test_set:
-        print(t)
+        for t in test_set:
+            print(t)
 
-    # start 4 worker processes
-    pool = Pool(processes=4)
-    pool.map(test_block_unpack, test_set)
+        # start 4 worker processes
+        pool = Pool(processes=4)
+        pool.map(test_block_unpack, test_set)

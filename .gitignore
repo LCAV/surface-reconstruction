@@ -1,6 +1,6 @@
 surface-images/*
 .*
 __pycache__
-*.ipynb
 *.npy
 *.pdf
+*.csv
