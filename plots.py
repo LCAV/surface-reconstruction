@@ -23,27 +23,27 @@ def generate_plots(n, ovs, noise_scale, true_param, cut=0):
     parameters = np.degrees(parameters[cut:])
 
     fig1, ax0 = plt.subplots()
-    ax0.loglog(errors, 'r-')
+    ax0.semilogy(errors, 'r-')
     ax0.set_xlabel('iteration')
     ax0.set_ylabel('errors', color='r')
     ax0.tick_params('y', colors='r')
 
     ax1 = ax0.twinx()
     ax1.axhline(true_param)
-    ax1.semilogx(parameters, 'c-')
+    ax1.plot(parameters, 'c-')
     ax1.set_ylabel('parameters', color='c')
     ax1.tick_params('y', colors='c')
 
     fig1.tight_layout()
 
     fig2, ax2 = plt.subplots()
-    ax2.loglog(errors, 'r-')
+    ax2.semilogy(errors, 'r-')
     ax2.set_xlabel('iteration')
     ax2.set_ylabel('errors', color='r')
     ax2.tick_params('y', colors='r')
 
     ax3 = ax2.twinx()
-    ax3.loglog(np.abs(parameters - true_param), 'g-')
+    ax3.semilogy(np.abs(parameters - true_param), 'g-')
     ax3.set_ylabel('true error', color='g')
     ax3.tick_params('y', colors='g')
 

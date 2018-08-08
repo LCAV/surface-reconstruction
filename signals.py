@@ -51,10 +51,10 @@ class SignalPolynomial(SignalModel):
         start_pos = np.array(start_pos)
         p = [start_pos]
         value = self.get_samples(start_pos)
-        new_pol = self.parameters
+        new_pol = np.copy(self.parameters)
         new_pol[-1] -= value
         for i in range(1, n):
-            new_pol += change
+            new_pol += change/(n-1)
             r = np.roots(new_pol)
             p.append(min(r, key=lambda x: abs(x - p[i - 1])))
         return p
@@ -217,8 +217,8 @@ class SignalExp(SignalModel):
         p = [start_pos]
         start_val = self.value(start_pos)
         new_parameters = np.copy(self.parameters)
-        for i in range(1, n+1):
-            s = SignalExp(new_parameters + (i * change)/n)
+        for i in range(1, n):
+            s = SignalExp(new_parameters + (i * change)/(n-1))
             value = lambda x: s.value(x) - start_val
             r = optimize.newton(value, p[i - 1], fprime=s.derivative_value)
             assert(np.isclose(s.value(r), start_val))
