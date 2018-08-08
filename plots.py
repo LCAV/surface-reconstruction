@@ -2,24 +2,23 @@ from matplotlib import pylab
 import matplotlib.pyplot as plt
 from signals import *
 
-def plot_results(signal, color='b', resolution=100, interval=(0, 1), lw = 1, label="", ls='-'):
+
+def plot_results(signal, color='b', resolution=100, interval=(0, 1), lw=1, label="", ls='-'):
     t = np.linspace(interval[0], interval[1], resolution)
     return pylab.plot(t, signal.get_samples(t), color, linewidth=lw, label=label, ls=ls)
 
 
-def stem_results(positions, samples, color='b',label=""):
-    return pylab.stem(positions, samples,  markerfmt=color + 'o', linefmt=color + '-.',label=label)
+def stem_results(positions, samples, color='b', label=""):
+    return pylab.stem(positions, samples, markerfmt=color + 'o', linefmt=color + '-.', label=label)
 
 
 def generate_plots(n, ovs, noise_scale, true_param, cut=0):
     version = str(n) + "_" + str(ovs) + "_" + str(noise_scale)
 
     errors = np.load('offline_results/offline_errors' + version + '.npy')
-    betas = np.load('offline_results/offline_beta' + version + '.npy')
     parameters = np.load('offline_results/offline_params' + version + '.npy')
 
     errors = np.degrees(errors[cut:])
-    betas = betas[cut:]
     parameters = np.degrees(parameters[cut:])
 
     fig1, ax0 = plt.subplots()
@@ -51,7 +50,7 @@ def generate_plots(n, ovs, noise_scale, true_param, cut=0):
     return fig1, fig2
 
 
-def known_error(start_positions,  model_size, tr_param, samples):
+def known_error(start_positions, model_size, tr_param, samples):
     x = SecondSurfacePolynomial.create_ls_matrix(start_positions, model_size, tr_param)
     parameter_estimate = np.linalg.solve(np.dot(x.T, x), np.dot(x.T, samples))
     return np.linalg.norm(np.dot(x, parameter_estimate) - samples)
@@ -68,4 +67,4 @@ def draw_plot(ax, data, edge_color, fill_color):
 
 
 def my_degrees(rad):
-    return rad*180/np.pi
+    return rad * 180 / np.pi

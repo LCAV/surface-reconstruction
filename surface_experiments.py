@@ -4,7 +4,7 @@ from plots import *
 from multiprocessing import Pool
 import pickle
 
-def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f):
+def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f, plots):
 
     errors_ = []
     sig_pow = []
@@ -13,10 +13,10 @@ def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f):
     if nl is not 0:
         noise_ampl = 10.0 ** (-nl)
 
-    version = str(n) + "_" + str(ovs) + "_" + "{0:.2f}".format(nl)
+    version = "{}_{}_{:.2f}".format(n, ovs, nl)
     print("starting version:", version)
 
-    params = np.loadtxt("polynomials"+str(n)+".csv", delimiter=",")
+    params = np.loadtxt("polynomials{}.csv".format(n), delimiter=",")
     if tests > params.shape[0]:
         print("not enough polynomials!")
         return
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
 
     def test_block_unpack(t):
-        return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory, b, f)
+        return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory, b, f, plots)
 
 
     with open('test_set', 'rb') as in_file:

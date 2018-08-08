@@ -14,11 +14,15 @@ class SignalModel(object):
     def get_samples(self, positions):
         raise NotImplementedError('get_samples must be implemented by the subclass')
 
-    def square_error(self, signal2):
-        raise NotImplementedError('square_error must be implemented by the subclass')
+    def norm2(self, parameters=None):
+        raise NotImplementedError('norm2 must be implemented by the subclass')
 
     def path(self, point, change, n=50):
         raise NotImplementedError('path must be implemented by the subclass')
+
+    def square_error(self, signal2):
+        diff_parameters = self.parameters - signal2.parameters
+        return self.norm2(diff_parameters)
 
 
 class SignalPolynomial(SignalModel):
@@ -43,10 +47,6 @@ class SignalPolynomial(SignalModel):
                 norm += self.interval_length ** (k + m + 1) * prm[-(k + 1)] * prm[-(m + 1)] / (k + m + 1)
         return norm
 
-    def square_error(self, signal2):
-        diff_parameters = self.parameters - signal2.parameters
-        return self.norm2(diff_parameters)
-
     def path(self, start_pos, change, n=50):
         start_pos = np.array(start_pos)
         p = [start_pos]
@@ -54,7 +54,7 @@ class SignalPolynomial(SignalModel):
         new_pol = np.copy(self.parameters)
         new_pol[-1] -= value
         for i in range(1, n):
-            new_pol += change/(n-1)
+            new_pol += change / (n - 1)
             r = np.roots(new_pol)
             p.append(min(r, key=lambda x: abs(x - p[i - 1])))
         return p
@@ -88,6 +88,7 @@ class SignalPolynomial(SignalModel):
 class ConstrainedPolynomial(SignalPolynomial):
     """Abstract constrained polynomial:
     contains all the logic needed for ALS algorithm, but constrains need to be added"""
+
     def __init__(self, parameters, interval_length=1):
         super(ConstrainedPolynomial, self).__init__(parameters, interval_length)
 
@@ -129,6 +130,7 @@ class ConstrainedPolynomial(SignalPolynomial):
 class SurfacePolynomial(ConstrainedPolynomial):
     """Simple version of constrained polynomial on the surface:
     constrains modeled as simple rational function,x/(1-parameters*x)"""
+
     def __init__(self, parameters, interval_length=1):
         super(SurfacePolynomial, self).__init__(parameters, interval_length)
 
@@ -149,13 +151,14 @@ class SurfacePolynomial(ConstrainedPolynomial):
 class FullSurfacePolynomial(ConstrainedPolynomial):
     """Simple version of constrained polynomial on the surface:
     constrains modeled as simple rational function, parameters[1]*x/(1-parameters[0]*x)"""
+
     def __init__(self, parameters, interval_length=1):
         super(FullSurfacePolynomial, self).__init__(parameters, interval_length)
 
     @classmethod
     def positions_derivative(cls, sample_positions, tr_parameter):
-        coef = 1.0/(1.0 + tr_parameter[1])
-        return np.array([[coef*x ** 2, coef*x]
+        coef = 1.0 / (1.0 + tr_parameter[1])
+        return np.array([[coef * x ** 2, coef * x]
                          for x in cls.shifted_positions(sample_positions, tr_parameter)])
 
     @staticmethod
@@ -171,6 +174,7 @@ class FullSurfacePolynomial(ConstrainedPolynomial):
 
 class SecondSurfacePolynomial(ConstrainedPolynomial):
     """The final version of constrained polynomial on the surface, as described in the paper"""
+
     def __init__(self, parameters, interval_length=1):
         super(SecondSurfacePolynomial, self).__init__(parameters, interval_length)
 
@@ -186,16 +190,16 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
 
     @staticmethod
     def _denominator(s, f, cosa, sina):
-        return 1.0/(f*cosa - s * sina)
+        return 1.0 / (f * cosa - s * sina)
 
     @staticmethod
     def shifted_positions(sample_positions, trace_param):
         assert trace_param[1] > 0, 'b = ' + str(trace_param[1])
-        assert abs(trace_param[0]) < (np.pi/2.0), 'a = ' + str(trace_param[0])
+        assert abs(trace_param[0]) < (np.pi / 2.0), 'a = ' + str(trace_param[0])
         assert abs(np.tan(trace_param[0])) < trace_param[2], 'tg(a) = ' + str(np.tan(trace_param[0]))
         cosa = np.cos(trace_param[0])
         sina = np.sin(trace_param[0])
-        return [(trace_param[1]) * x / (trace_param[2]*cosa - sina * x) for x in sample_positions]
+        return [(trace_param[1]) * x / (trace_param[2] * cosa - sina * x) for x in sample_positions]
 
     @staticmethod
     def zero_transformation():
@@ -204,6 +208,7 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
 
 class SignalExp(SignalModel):
     """Unfinished real part of exponential (bandlimited) signal"""
+
     def __init__(self, parameters, interval_length=2 * np.pi):
         super(SignalExp, self).__init__(parameters, interval_length)
 
@@ -218,10 +223,9 @@ class SignalExp(SignalModel):
         start_val = self.value(start_pos)
         new_parameters = np.copy(self.parameters)
         for i in range(1, n):
-            s = SignalExp(new_parameters + (i * change)/(n-1))
-            value = lambda x: s.value(x) - start_val
-            r = optimize.newton(value, p[i - 1], fprime=s.derivative_value)
-            assert(np.isclose(s.value(r), start_val))
+            s = SignalExp(new_parameters + (i * change) / (n - 1))
+            r = optimize.newton(lambda x: s.value(x) - start_val, p[i - 1], fprime=s.derivative_value)
+            assert (np.isclose(s.value(r), start_val))
             p.append(r)
         return p
 
@@ -236,6 +240,11 @@ class SignalExp(SignalModel):
         for k in range(0, self.model_size):
             v -= k * self.parameters[-(k + 1)] * np.sin(k * x)
         return v
+
+    def norm2(self, prm=None):
+        if prm is None:
+            prm = self.parameters
+        return 2*np.power(np.abs(prm), 2)
 
 
 def next_zero(signal, x0, steps=1000, precision=10e-6, gamma=0.01):
