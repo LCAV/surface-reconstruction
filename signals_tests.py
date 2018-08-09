@@ -1,6 +1,11 @@
+"""
+Test different signals and solvers combinations.
+Gives example syntax.
+"""
+
+
 from samplers import *
 from solvers import *
-
 
 def test1(signal_type, sampler_type, solver_type, plot=False):
     n = 20
@@ -18,7 +23,7 @@ def test1(signal_type, sampler_type, solver_type, plot=False):
         stem_results(solver.position_estimate, sampler.sample_values)
         pylab.show()
     print("{:.2e}".format(solver.train_error))
-    print("{:.2e}".format(polynomial.square_error(signal_type(solver.parameter_estimate))))
+    print("{:.2e}".format(polynomial.square_error(solver.parameter_estimate)))
 
 
 print('testing deterministic sampling + OLS:')

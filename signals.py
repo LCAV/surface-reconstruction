@@ -12,16 +12,42 @@ class SignalModel(object):
         self.interval_length = interval_length
 
     def get_samples(self, positions):
+        """
+        Returns sample values for given positions
+        Args:
+            positions (numpy.ndarray): positions to evaluate
+
+        Returns:
+            numpy.ndarray: sample values
+        """
         raise NotImplementedError('get_samples must be implemented by the subclass')
 
     def norm2(self, parameters=None):
+        """
+        Args:
+            parameters (numpy.ndarray): optional, if provided function returns
+                norm of the signal defined by parameters
+        Returns:
+            float: value of the L2 norm of the (continous) signal
+        """
         raise NotImplementedError('norm2 must be implemented by the subclass')
 
     def path(self, point, change, n=50):
         raise NotImplementedError('path must be implemented by the subclass')
 
-    def square_error(self, signal2):
-        diff_parameters = self.parameters - signal2.parameters
+    def square_error(self, parameters2):
+        """
+        Returns the value of MSE, or squared difference between self and signal2,
+        (treated as continuous functions).
+
+        Args:
+            parameters2 (numpy.ndarray):  signal to compare to
+
+        Returns:
+            float: value of MSE
+
+        """
+        diff_parameters = self.parameters - parameters2
         return self.norm2(diff_parameters)
 
 
@@ -129,7 +155,7 @@ class ConstrainedPolynomial(SignalPolynomial):
 
 class SurfacePolynomial(ConstrainedPolynomial):
     """Simple version of constrained polynomial on the surface:
-    constrains modeled as simple rational function,x/(1-parameters*x)"""
+    constrains modeled as simple rational function, x/(1-parameters*x)"""
 
     def __init__(self, parameters, interval_length=1):
         super(SurfacePolynomial, self).__init__(parameters, interval_length)
@@ -207,7 +233,7 @@ class SecondSurfacePolynomial(ConstrainedPolynomial):
 
 
 class SignalExp(SignalModel):
-    """Unfinished real part of exponential (bandlimited) signal"""
+    """Real, periodic bandlimited signal (exponential polynomial)"""
 
     def __init__(self, parameters, interval_length=2 * np.pi):
         super(SignalExp, self).__init__(parameters, interval_length)
@@ -244,10 +270,24 @@ class SignalExp(SignalModel):
     def norm2(self, prm=None):
         if prm is None:
             prm = self.parameters
-        return 2*np.power(np.abs(prm), 2)
+        return 2 * np.power(np.abs(prm), 2)
 
 
 def next_zero(signal, x0, steps=1000, precision=10e-6, gamma=0.01):
+    """
+    Finds a position of zero of a signal using Newton's method
+
+    Args:
+        signal (SignalExp): bandlimited function which will be searched for a zero
+        x0 (float): starting point for the search
+        steps (int): maximal possible number of steps
+        precision (float): maximal acceptable precession
+        gamma (float): step size
+
+    Returns:
+        float: position of a zero
+
+    """
     x = x0
     for i in range(0, steps):
         if abs(signal.value(x0)) < precision:

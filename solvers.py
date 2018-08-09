@@ -1,6 +1,7 @@
 from plots import *
 import time
 
+
 class Solver(object):
     """General solver"""
 
@@ -11,12 +12,24 @@ class Solver(object):
         self.model_type = model_type
         self.interval_length = interval_length
         self.position_estimate = np.linspace(0, self.interval_length, self.number_samples)
-        self.parameter_estimate = 0
+        self.parameter_estimate = np.zeros(1)
 
     def solve(self):
+        """
+        Finds parameters (different for different solvers),
+        and stores results in it the fields of the solver.
+
+        """
         raise NotImplemented
 
     def test_error(self, signal):
+        """
+        Args:
+            signal (SignalModel): signal to compare with
+
+        Returns:
+            float: squared distance between stored signal and the given one
+        """
         return signal.square_error(self.parameter_estimate)
 
     def get_position_estimates(self):
@@ -33,7 +46,7 @@ class OrdinaryLS(Solver):
     def __init__(self, samples, model_size, model_type, interval_length=1):
         super(OrdinaryLS, self).__init__(samples, model_size, model_type, interval_length)
         self.train_error = 0
-        self.parameter_estimate = []*model_size
+        self.parameter_estimate = np.zeros(self.model_size)
 
     def solve(self):
         x = self.model_type.create_ls_matrix(self.position_estimate, self.model_size)
@@ -69,7 +82,7 @@ class AlternatingLS(Solver):
             self.parameter_estimate = np.linalg.solve(np.dot(x.T, x), np.dot(x.T, self.samples))
             g = self.model_type.compute_ls_gradient(self.position_estimate, self.parameter_estimate, self.samples)
             if self.hold_edges:
-                self.position_estimate[1:self.number_samples-1] -= self.beta * g[1:self.number_samples-1]
+                self.position_estimate[1:self.number_samples - 1] -= self.beta * g[1:self.number_samples - 1]
             else:
                 self.position_estimate -= self.beta * g
             error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
@@ -94,6 +107,7 @@ class ConstrainedALS(AlternatingLS):
                  fl=1.0, angle=0, verbose=True, early_stopping=1.0e-16):
         super(ConstrainedALS, self).__init__(samples, model_size, model_type, show_plots,
                                              hold_edges, stopping_error, beta, interval_length)
+        self.figure, self.axis = pylab.subplots(1, 3)
         assert len(samples) == len(start_pos)
         self.position_estimate = start_pos
         self.start_positions = start_pos
@@ -112,13 +126,14 @@ class ConstrainedALS(AlternatingLS):
 
     def solve(self):
         if self.show_plots:
-            self.figure, self.axis = pylab.subplots(1, 3)
             self.axis[0].set_title("beta")
             self.axis[1].set_title("error")
             self.axis[2].set_title("gradient")
 
         blocked = False
         for k in range(0, self.max_iterations):
+
+            # solver is blocked if gradient step would take parameters outside safe intervals
             if not blocked:
                 x = self.model_type.create_ls_matrix(self.start_positions, self.model_size, self.tr_param)
                 try:
@@ -128,27 +143,26 @@ class ConstrainedALS(AlternatingLS):
                     print("angle:", self.tr_param[0])
                     break
 
-            error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
+                error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
+                if error < self.stopping_error:
+                    if self.verb:
+                        print("error small enough after fitting parameters")
+                    break
 
-            if error < self.stopping_error:
-                if self.verb:
-                    print("error small enough after fitting parameters")
-                break
+                g = self.model_type.compute_ls_gradient(self.start_positions, self.parameter_estimate, self.samples,
+                                                        self.tr_param)
 
-            g = self.model_type.compute_ls_gradient(self.start_positions, self.parameter_estimate, self.samples,
-                                                    self.tr_param)
+                if np.max(np.abs(error - self.error)) < self.early_stopping:
+                    if self.verb:
+                        print("error stopped changing after", k, "steps")
+                    break
 
-
-            if (np.max(np.abs(error-self.error)) < self.early_stopping) & (not blocked):
-                if self.verb:
-                    print("error stopped changing after", k, "steps")
-                break
-
-            # instead of normalizing the gradient, normalize beta
+            # instead of normalizing the gradient, reduce beta, to prevent parameters outside stable region
             # WARNING this is not a nice hack below:
 
-            if self.tr_param[2] > np.abs(np.tan(self.tr_param[0] - self.beta * g[0])) and np.abs(self.tr_param[0] - self.beta * g[0]) < (np.pi / 2.0):
+            if self.tr_param[2] > np.abs(np.tan(self.tr_param[0] - self.beta * g[0])) and np.abs(
+                    self.tr_param[0] - self.beta * g[0]) < (np.pi / 2.0):
                 self.tr_param -= self.beta * g
                 blocked = False
             else:
@@ -160,11 +174,7 @@ class ConstrainedALS(AlternatingLS):
                     print("beta became to small")
                 break
 
-            try:
-                self.position_estimate = self.model_type.shifted_positions(self.start_positions, self.tr_param)
-            except AssertionError as as_err:
-                print("this is the place!")
-                raise
+            self.position_estimate = self.model_type.shifted_positions(self.start_positions, self.tr_param)
 
             error = np.linalg.norm(np.dot(x, self.parameter_estimate) - self.samples) / self.number_samples
 
@@ -174,20 +184,11 @@ class ConstrainedALS(AlternatingLS):
                 break
 
             if self.error < error:
-                # if self.verb:
-                    # print("error:", self.error, "beta:", self.beta)
-                if self.beta > 10*np.finfo(float).eps:
+                if self.beta > 10 * np.finfo(float).eps:
                     self.beta *= 0.9
 
             self.error = error
 
-            # if k > 0 and sign != np.sign(g[0]):
-            #     if self.verb:
-            #         print("gradient changed sign")
-            #     # if self.beta > 10*np.finfo(float).eps:
-            #     #     self.beta *= 0.9
-
-            sign = np.sign(g[0])
 
             if self.show_plots:
                 self.axis[0].plot(k, self.beta, 'go')
@@ -202,21 +203,3 @@ class ConstrainedALS(AlternatingLS):
             if k == self.max_iterations - 1:
                 if self.verb:
                     print('force stop after', self.max_iterations, 'steps')
-        # self.figure.show()
-
-
-class InvertedLS(OrdinaryLS):
-    """InvertedLS:
-    for linear function, with assumption that samples are uniformly spaced with added gaussian error,
-    we can exchange x and y and use OLS"""
-
-    def __init__(self, samples, model_size, model_type, interval_length=1):
-        super(InvertedLS, self).__init__(samples, model_size, model_type, interval_length)
-        assert model_size == 2
-
-    def solve(self):
-        (self.position_estimate, self.samples) = (self.samples, self.position_estimate)
-        (self.train_error, self.parameter_estimate) = self.solve() #TODO what it is doing?
-        (self.position_estimate, self.samples) = (self.samples, self.position_estimate)
-        pe = self.parameter_estimate
-        self.parameter_estimate = [-pe[0]/pe[1], 1/pe[1]]

@@ -13,6 +13,21 @@ def stem_results(positions, samples, color='b', label=""):
 
 
 def generate_plots(n, ovs, noise_scale, true_param, cut=0):
+    """
+Generates plots illustrating performance of the algorithm based on the data stored
+during the running of the algorithm in the directory offline_results, and returns
+pair of matplotlib figures
+
+Args:
+    n (int): degree of the polynomial
+    ovs (int): number of times the polynomial is oversampled
+    noise_scale (float): variance of the noise
+    true_param (float): true value of angle
+    cut (int): iteration at which plotting begins
+
+Returns:
+    pair fig1, fig2, the generated plots.
+    """
     version = str(n) + "_" + str(ovs) + "_" + str(noise_scale)
 
     errors = np.load('offline_results/offline_errors' + version + '.npy')
@@ -51,6 +66,10 @@ def generate_plots(n, ovs, noise_scale, true_param, cut=0):
 
 
 def known_error(start_positions, model_size, tr_param, samples):
+    """
+Given samples with corresponding true positions, calculates MSE
+based on the parameters tr_param (not necessarily true).
+    """
     x = SecondSurfacePolynomial.create_ls_matrix(start_positions, model_size, tr_param)
     parameter_estimate = np.linalg.solve(np.dot(x.T, x), np.dot(x.T, samples))
     return np.linalg.norm(np.dot(x, parameter_estimate) - samples)
@@ -64,7 +83,3 @@ def draw_plot(ax, data, edge_color, fill_color):
 
     for patch in bp['boxes']:
         patch.set(facecolor=fill_color)
-
-
-def my_degrees(rad):
-    return rad * 180 / np.pi

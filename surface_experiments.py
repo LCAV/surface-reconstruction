@@ -97,7 +97,7 @@ if __name__ == '__main__':
         return test_block(t[0], t[1], t[2], n_tests, slopes, verbose, save, directory, b, f, plots)
 
 
-    with open('test_set', 'rb') as in_file:
+    with open('parameters/test_set', 'rb') as in_file:
         test_set = pickle.load(in_file)
 
         for t in test_set:

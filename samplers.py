@@ -23,9 +23,10 @@ class GaussianSampler(DeterministicSampler):
     """Random sampler:
     generates sample positions independently from normal distribution,
     with variance sigma and uniform sample positions as a vector of means"""
+
     def __init__(self, signal, number_samples, interval_length=1, hold_edges=True, sigma=None, beg=0):
         if sigma is None:
-            sigma = (1.0*interval_length)/number_samples
+            sigma = (1.0 * interval_length) / number_samples
         self.sigma = sigma
         self.hold_edges = hold_edges
         self.beg = beg
@@ -38,7 +39,7 @@ class GaussianSampler(DeterministicSampler):
         positions = np.sort(positions)
         if self.hold_edges:
             positions[0] = 0
-            positions[self.number_samples-1] = self.interval_length
+            positions[self.number_samples - 1] = self.interval_length
         return positions
 
 
@@ -46,6 +47,7 @@ class SurfaceSampler(GaussianSampler):
     """Deterministic surface sampler:
     generates sample positions uniformly from the signal on the surface described by surf_params
     the actual sample movement is handled by the Signal model"""
+
     def __init__(self, signal, number_samples, surf_params, interval_length=1, sigma=None, beg=0):
         self.surf_params = surf_params
         self.beg = beg
