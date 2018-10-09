@@ -101,9 +101,6 @@ which can also be used with `pip` and `conda`.
 
 ## License
 
-* Add the LICENSE file to the root of your repository, to make github understand 
-that there is one.
-
 ```
 Copyright (c) 2018, Michalina Pacholska
 
