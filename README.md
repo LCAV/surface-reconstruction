@@ -50,6 +50,7 @@ analysis.
 ## Authors
 
 Michalina Pacholska, EPFL
+
 Golnoosh Elhami, EPFL
 
 <img 
@@ -59,6 +60,7 @@ src="http://lcav.epfl.ch/files/content/sites/lcav/files/images/Home/LCAV_anim_20
 #### Contact
 
 Michalina Pacholska, michalina.pacholska at epfl.ch
+
 Golnoosh Elhami, golnoosh.elhami at epfl.ch
 
 ## About
