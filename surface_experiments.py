@@ -16,7 +16,7 @@ def test_block(n, ovs, nl, tests, slopes, verbose, save, directory, b, f, plots)
     version = "{}_{}_{:.2f}".format(n, ovs, nl)
     print("starting version:", version)
 
-    params = np.loadtxt("polynomials{}.csv".format(n), delimiter=",")
+    params = np.loadtxt("example_polynomials{}.csv".format(n), delimiter=",")
     if tests > params.shape[0]:
         print("not enough polynomials!")
         return

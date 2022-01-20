@@ -107,7 +107,8 @@ class ConstrainedALS(AlternatingLS):
                  fl=1.0, angle=0, verbose=True, early_stopping=1.0e-16):
         super(ConstrainedALS, self).__init__(samples, model_size, model_type, show_plots,
                                              hold_edges, stopping_error, beta, interval_length)
-        self.figure, self.axis = pylab.subplots(1, 3)
+        if self.show_plots:
+            self.figure, self.axis = pylab.subplots(1, 3)
         assert len(samples) == len(start_pos)
         self.position_estimate = start_pos
         self.start_positions = start_pos
